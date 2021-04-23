@@ -1,0 +1,104 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(readr)
+```
+
+
+
+```{r}
+#Datensätze einlesen 
+
+getwd()
+
+books <- read_delim("data/BX-Books.csv", 
+    ";", escape_double = FALSE, trim_ws = TRUE)
+
+rating <- read_delim("data/BX-Book-Ratings.csv", 
+    ";", escape_double = FALSE, trim_ws = TRUE)
+
+```
+
+<b> Gibt es eine Korrelation zwischen Anzahl Bücher pro Publisher und Anzahl Ratings, die die Bücher eines Publishers erhalten? (hier müssen Sie wieder etwas Data Wrangling betreiben) </b>
+
+
+Antwort: Bei diesem Graphen besteht eine lineare Beziehung, was mit Sicherheit behauptet werden kann, da der p-Wert beim Korrelationstest ungleich 0 ist. Der Korrelationskoeffizient liegt in diesem Fall bei ~0.97, was eine starke Korrelation zwischen den beiden Variablen bedeutet.  
+
+
+```{r}
+#Bücher pro Publisher und Anzahl Rating  
+colnames(rating)[colnames(rating)=="Book-Rating"] <- "rating"
+colnames(books)[colnames(books)=="Publisher"] <- "publisher"
+colnames(books)[colnames(books)=="Book-Title"] <- "Title"
+
+
+all <- books %>% 
+  left_join(rating) %>% 
+  select(ISBN, Title, publisher, rating) %>% 
+  filter(rating >0) %>% 
+  group_by(publisher) %>% 
+  mutate(rating_publisher=n()) %>%
+  unique() %>%
+  select(publisher, Title, rating_publisher) %>%
+  mutate(bucher_anzahl=n()) %>% 
+  ungroup() %>% 
+  select(bucher_anzahl, rating_publisher) 
+
+
+```
+
+```{r}
+#line <- lm(all$bucher_anzahl ~ all$rating_publisher)
+#abline(line)
+
+plot(all, xlab="Rating pro Publisher", ylab="Anzahl Bücher pro Publisher") %>% 
+  title(main="Korrelation") 
+
+
+```
+
+```{r}
+cor.test(all$bucher_anzahl, all$rating_publisher)
+
+```
+
+
+<b>Haben ältere Bücher mehr Ratings, weil sie mehr Zeit haben, um Ratings zu sammeln?</b>
+
+Antwort: Laut meiner Graphik nein, denn wie es zu sehen ist, gibt es durchaus alte Bücher, die z.B. um die 1800 geschrieben worden sind und trotzdem ein sehr niedriges Rating haben und gleichzeitig gibt es Bücher, die um die 2000 geschrieben wurden und sehr hohe Bewertungen erhielten. 
+
+```{r}
+colnames(books)[colnames(books)=="Year-Of-Publication"] <- "Year"
+
+
+
+bucher <- books %>%
+  left_join(rating) %>% 
+  select(Year, Title, rating) %>%
+  filter(rating!=0) %>%
+  filter(Year!=0) %>% 
+  group_by(Title) %>% 
+  mutate(rating_buch=n()) %>% 
+  select(Year, Title, rating_buch) %>% 
+  unique() %>% 
+  ungroup() %>% 
+  select(Year, rating_buch)
+
+
+
+plot(bucher)
+line(bucher$rating_buch ~ bucher$Year)
+```
+
+  
+<b>Kann man mit einer linearen Regression etwas davon vorhersagen?</b>
+
+Antwort: Mit einer linearen Regression kann in diesem Fall nicht viel vorhergesagt werden, aber normalerweise kann das Verhältnis einer abhängigen Variable (in meinem Fall Anzhal Rating) zu der unabhängigen (Jahr) vorhersagen/abschätzen. 
+
+getwd()
+  
+  
